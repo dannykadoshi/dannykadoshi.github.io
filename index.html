@@ -19,8 +19,6 @@
         /* ===========================
            THEME VARIABLES
         =========================== */
-
-        /* — DARK (default) — */
         :root, [data-theme="dark"] {
             --bg:           #0d0d14;
             --bg2:          #13131f;
@@ -34,12 +32,11 @@
             --accent2-glow: rgba(245,230,66,0.18);
             --text:         #e8e8f5;
             --text-muted:   #8888aa;
-            --nav-bg:       rgba(13,13,20,0.82);
+            --nav-bg:       rgba(13,13,20,0.85);
+            --loader-bg:    #0d0d14;
             --font-body:    'Inter', sans-serif;
             --font-mono:    'Fira Code', monospace;
         }
-
-        /* — LIGHT — */
         [data-theme="light"] {
             --bg:           #f4f4f8;
             --bg2:          #eaeaf0;
@@ -54,9 +51,8 @@
             --text:         #1a1a2e;
             --text-muted:   #55556a;
             --nav-bg:       rgba(244,244,248,0.88);
+            --loader-bg:    #f4f4f8;
         }
-
-        /* — MATRIX — */
         [data-theme="matrix"] {
             --bg:           #000000;
             --bg2:          #060606;
@@ -70,12 +66,11 @@
             --accent2-glow: rgba(0,255,65,0.15);
             --text:         #00ff41;
             --text-muted:   rgba(0,255,65,0.55);
-            --nav-bg:       rgba(0,0,0,0.88);
+            --nav-bg:       rgba(0,0,0,0.90);
+            --loader-bg:    #000000;
             --font-body:    'Fira Code', monospace;
             --font-mono:    'Fira Code', monospace;
         }
-
-        /* — CYBERPUNK — */
         [data-theme="cyberpunk"] {
             --bg:           #07000f;
             --bg2:          #0d0019;
@@ -89,10 +84,9 @@
             --accent2-glow: rgba(0,212,255,0.18);
             --text:         #f0f0ff;
             --text-muted:   #9090bb;
-            --nav-bg:       rgba(7,0,15,0.88);
+            --nav-bg:       rgba(7,0,15,0.90);
+            --loader-bg:    #07000f;
         }
-
-        /* — MINIMAL — */
         [data-theme="minimal"] {
             --bg:           #080808;
             --bg2:          #0f0f0f;
@@ -106,10 +100,9 @@
             --accent2-glow: rgba(255,255,255,0.06);
             --text:         #ffffff;
             --text-muted:   #666666;
-            --nav-bg:       rgba(8,8,8,0.9);
+            --nav-bg:       rgba(8,8,8,0.92);
+            --loader-bg:    #080808;
         }
-
-        /* Shared constants */
         :root {
             --nav-height: 70px;
             --radius:     16px;
@@ -121,7 +114,6 @@
            BASE
         =========================== */
         html { scroll-behavior: smooth; }
-
         body {
             font-family: var(--font-body, 'Inter', sans-serif);
             background: var(--bg);
@@ -129,136 +121,279 @@
             line-height: 1.6;
             overflow-x: hidden;
             transition: background 0.45s ease, color 0.45s ease;
+            cursor: none;
         }
+        a, button { cursor: none; }
+        @media (hover: none) { body, a, button { cursor: auto; } }
 
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 
         /* ===========================
+           1. LOADING SCREEN
+        =========================== */
+        #loader {
+            position: fixed; inset: 0;
+            background: var(--loader-bg, #0d0d14);
+            z-index: 99999;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 2rem;
+            transition: opacity 0.7s ease, visibility 0.7s ease;
+        }
+        #loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        .loader-logo {
+            font-family: 'Fira Code', monospace;
+            font-size: 3.5rem; font-weight: 700;
+            color: var(--text, #e8e8f5);
+            animation: loader-pulse 1.2s ease-in-out infinite;
+            letter-spacing: -0.03em;
+        }
+        .loader-logo span { color: #e91e8c; }
+
+        .loader-bar {
+            width: 180px; height: 2px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px; overflow: hidden;
+        }
+        .loader-fill {
+            height: 100%;
+            background: #e91e8c;
+            border-radius: 2px;
+            animation: loader-fill 1.4s ease forwards;
+        }
+        @keyframes loader-pulse {
+            0%,100% { opacity: 1; } 50% { opacity: 0.25; }
+        }
+        @keyframes loader-fill {
+            0% { width: 0; } 100% { width: 100%; }
+        }
+
+        /* ===========================
+           2. CUSTOM CURSOR
+        =========================== */
+        .cursor-dot {
+            position: fixed; top: 0; left: 0;
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 99998;
+            transition: background 0.3s ease, transform 0.05s ease;
+            will-change: transform;
+        }
+        .cursor-ring {
+            position: fixed; top: 0; left: 0;
+            width: 34px; height: 34px;
+            border: 1.5px solid var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 99997;
+            opacity: 0.6;
+            transition: border-color 0.3s ease, width 0.25s ease, height 0.25s ease, opacity 0.25s ease;
+            will-change: transform;
+        }
+        .cursor-ring.hovering {
+            width: 52px; height: 52px;
+            opacity: 0.3;
+            border-width: 1px;
+        }
+        @media (hover: none) { .cursor-dot, .cursor-ring { display: none; } }
+
+        /* ===========================
+           3. SCROLL PROGRESS BAR
+        =========================== */
+        #scroll-progress {
+            position: fixed; top: 0; left: 0;
+            height: 3px; width: 0%;
+            background: linear-gradient(to right, var(--accent), var(--accent2));
+            z-index: 1001;
+            transition: width 0.05s linear;
+            border-radius: 0 3px 3px 0;
+        }
+
+        /* ===========================
            MATRIX CANVAS
         =========================== */
         #matrix-canvas {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: 0;
-            display: none;
-            opacity: 0.55;
-            pointer-events: none;
+            z-index: 0; display: none;
+            opacity: 0.55; pointer-events: none;
         }
         [data-theme="matrix"] #matrix-canvas { display: block; }
 
         /* ===========================
            MATRIX THEME OVERRIDES
         =========================== */
-        [data-theme="matrix"] * {
-            font-family: 'Fira Code', monospace !important;
-            letter-spacing: 0.02em;
-        }
+        [data-theme="matrix"] * { font-family: 'Fira Code', monospace !important; letter-spacing: 0.02em; }
         [data-theme="matrix"] .hero-name,
-        [data-theme="matrix"] .section-title {
-            text-shadow: 0 0 20px var(--accent);
-        }
+        [data-theme="matrix"] .section-title { text-shadow: 0 0 20px var(--accent); }
         [data-theme="matrix"] .section-label::before { content: '$ '; }
-        [data-theme="matrix"] .hero-tag { border-color: var(--accent); }
-        [data-theme="matrix"] nav {
-            border-bottom-color: var(--accent);
-        }
+        [data-theme="matrix"] nav { border-bottom-color: var(--accent); }
         [data-theme="matrix"] .project-card:hover,
         [data-theme="matrix"] .timeline-item:hover,
-        [data-theme="matrix"] .stack-item:hover {
-            box-shadow: 0 0 30px var(--accent-glow), inset 0 0 30px rgba(0,255,65,0.03);
-        }
-        [data-theme="matrix"] .photo-frame::before {
-            background: linear-gradient(135deg, var(--accent), transparent, var(--accent));
-        }
+        [data-theme="matrix"] .stack-item:hover { box-shadow: 0 0 30px var(--accent-glow), inset 0 0 30px rgba(0,255,65,0.03); }
+        [data-theme="matrix"] .photo-frame::before { background: linear-gradient(135deg, var(--accent), transparent, var(--accent)); }
 
         /* ===========================
-           CYBERPUNK THEME OVERRIDES
+           CYBERPUNK OVERRIDES
         =========================== */
         [data-theme="cyberpunk"] .hero-name .highlight { color: var(--accent2); }
-        [data-theme="cyberpunk"] .project-card:hover {
-            box-shadow: 0 0 20px var(--accent-glow), 0 0 60px rgba(0,212,255,0.08);
-        }
-        [data-theme="cyberpunk"] .photo-frame::before {
-            background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent));
-        }
-        [data-theme="cyberpunk"] .btn-primary {
-            background: var(--accent);
-            color: #000;
-        }
-        [data-theme="cyberpunk"] .btn-primary:hover {
-            background: var(--accent-light);
-            color: #000;
-        }
+        [data-theme="cyberpunk"] .photo-frame::before { background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent)); }
+        [data-theme="cyberpunk"] .btn-primary { background: var(--accent); color: #000; }
+        [data-theme="cyberpunk"] .btn-primary:hover { background: var(--accent-light); color: #000; }
 
         /* ===========================
-           MINIMAL THEME OVERRIDES
+           MINIMAL OVERRIDES
         =========================== */
-        [data-theme="minimal"] .photo-frame::before {
-            background: linear-gradient(135deg, #ffffff, #444444, #ffffff);
-        }
-        [data-theme="minimal"] .btn-primary {
-            background: #ffffff;
-            color: #000000;
-        }
-        [data-theme="minimal"] .btn-primary:hover {
-            background: #cccccc;
-            color: #000000;
-        }
-        [data-theme="minimal"] .tag {
-            background: rgba(255,255,255,0.06);
-            border-color: rgba(255,255,255,0.18);
-            color: var(--text-muted);
-        }
+        [data-theme="minimal"] .photo-frame::before { background: linear-gradient(135deg, #fff, #444, #fff); }
+        [data-theme="minimal"] .btn-primary { background: #fff; color: #000; }
+        [data-theme="minimal"] .btn-primary:hover { background: #ccc; color: #000; }
+        [data-theme="minimal"] .tag { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); color: var(--text-muted); }
 
         /* ===========================
            NAVBAR
         =========================== */
         nav {
-            position: fixed;
-            top: 0; width: 100%;
+            position: fixed; top: 0; width: 100%;
             height: var(--nav-height);
             background: var(--nav-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--border);
             z-index: 1000;
             transition: background 0.45s ease, border-color 0.45s ease;
         }
-
         .nav-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            max-width: 1200px; margin: 0 auto;
+            padding: 0 2rem; height: 100%;
+            display: flex; align-items: center; justify-content: space-between;
         }
-
         .nav-logo {
             font-family: 'Fira Code', monospace;
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: var(--text);
-            text-decoration: none;
+            font-size: 1.1rem; font-weight: 500;
+            color: var(--text); text-decoration: none;
         }
         .nav-logo span { color: var(--accent); }
 
         .nav-right { display: flex; align-items: center; gap: 2rem; }
-
         .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
         .nav-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.88rem;
-            font-weight: 500;
+            color: var(--text-muted); text-decoration: none;
+            font-size: 0.88rem; font-weight: 500;
             letter-spacing: 0.02em;
             transition: color 0.25s ease;
+            position: relative; padding-bottom: 2px;
         }
-        .nav-links a:hover { color: var(--accent); }
+        /* 3. Active nav underline */
+        .nav-links a::after {
+            content: '';
+            position: absolute; bottom: -2px; left: 0;
+            width: 0; height: 2px;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        .nav-links a:hover,
+        .nav-links a.active { color: var(--accent); }
+        .nav-links a.active::after,
+        .nav-links a:hover::after { width: 100%; }
+
+        /* 4. Hamburger */
+        .hamburger {
+            display: none; flex-direction: column;
+            gap: 5px; background: none; border: none;
+            padding: 4px; cursor: none;
+        }
+        .hamburger span {
+            display: block; width: 22px; height: 2px;
+            background: var(--text);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hamburger { display: flex; }
+        }
+
+        /* 4. Mobile Menu */
+        .mobile-menu {
+            position: fixed; top: 0; right: -100%;
+            width: min(320px, 80vw); height: 100vh;
+            background: var(--bg2);
+            border-left: 1px solid var(--border);
+            z-index: 1100;
+            display: flex; flex-direction: column;
+            padding: 5rem 2.5rem 2.5rem;
+            gap: 0.5rem;
+            transition: right 0.4s var(--ease);
+            backdrop-filter: blur(24px);
+        }
+        .mobile-menu.open { right: 0; }
+        .mobile-menu a {
+            color: var(--text-muted); text-decoration: none;
+            font-size: 1.5rem; font-weight: 700;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+            transition: color 0.25s ease, padding-left 0.25s ease;
+            letter-spacing: -0.02em;
+        }
+        .mobile-menu a:hover { color: var(--accent); padding-left: 0.5rem; }
+        .mobile-menu-close {
+            position: absolute; top: 1.5rem; right: 1.5rem;
+            background: var(--card); border: 1px solid var(--border);
+            color: var(--text); width: 38px; height: 38px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            cursor: none; font-size: 1rem;
+            transition: all 0.25s ease;
+        }
+        .mobile-menu-close:hover { border-color: var(--accent); color: var(--accent); }
+        .mobile-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1099; backdrop-filter: blur(4px);
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .mobile-overlay.open { opacity: 1; visibility: visible; }
+
+        /* ===========================
+           6. TICKER
+        =========================== */
+        .ticker-wrap {
+            position: relative; z-index: 1;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            overflow: hidden;
+            height: 36px;
+            display: flex; align-items: center;
+            margin-top: var(--nav-height);
+            transition: background 0.45s ease;
+        }
+        .ticker-track {
+            display: flex; gap: 0;
+            animation: ticker-scroll 28s linear infinite;
+            white-space: nowrap;
+            will-change: transform;
+        }
+        .ticker-track:hover { animation-play-state: paused; }
+        .ticker-item {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            padding: 0 2.5rem;
+            letter-spacing: 0.04em;
+        }
+        .ticker-item span { color: var(--accent); margin-right: 0.4rem; }
+        @keyframes ticker-scroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
 
         /* ===========================
            SHARED LAYOUT
@@ -268,103 +403,70 @@
 
         .section-label {
             font-family: 'Fira Code', monospace;
-            font-size: 0.78rem;
-            color: var(--accent);
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            margin-bottom: 0.6rem;
+            font-size: 0.78rem; color: var(--accent);
+            letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.6rem;
         }
         .section-title {
             font-size: clamp(1.8rem, 3vw, 2.4rem);
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            line-height: 1.15;
-            margin-bottom: 3rem;
+            font-weight: 800; letter-spacing: -0.02em;
+            line-height: 1.15; margin-bottom: 3rem;
         }
-
         .btn-primary {
             display: inline-flex; align-items: center; gap: 0.5rem;
-            background: var(--accent);
-            color: #fff;
-            padding: 0.75rem 1.75rem;
-            border-radius: var(--radius-sm);
+            background: var(--accent); color: #fff;
+            padding: 0.75rem 1.75rem; border-radius: var(--radius-sm);
             font-weight: 600; font-size: 0.92rem;
-            text-decoration: none;
+            text-decoration: none; border: none; cursor: none;
             transition: all 0.3s var(--ease);
-            border: none; cursor: pointer;
         }
-        .btn-primary:hover {
-            background: var(--accent-light);
-            box-shadow: 0 8px 28px var(--accent-glow);
-            transform: translateY(-2px);
-        }
+        .btn-primary:hover { background: var(--accent-light); box-shadow: 0 8px 28px var(--accent-glow); transform: translateY(-2px); }
         .btn-outline {
             display: inline-flex; align-items: center; gap: 0.5rem;
             background: transparent; color: var(--text);
-            padding: 0.75rem 1.75rem;
-            border-radius: var(--radius-sm);
+            padding: 0.75rem 1.75rem; border-radius: var(--radius-sm);
             font-weight: 600; font-size: 0.92rem;
-            text-decoration: none;
-            border: 1px solid var(--border);
-            transition: all 0.3s var(--ease);
+            text-decoration: none; border: 1px solid var(--border);
+            transition: all 0.3s var(--ease); cursor: none;
         }
-        .btn-outline:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            box-shadow: 0 0 20px var(--accent-glow);
-            transform: translateY(-2px);
-        }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); transform: translateY(-2px); }
 
         /* ===========================
            HERO
         =========================== */
         #hero {
-            min-height: 100vh;
+            min-height: calc(100vh - 36px);
             display: flex; align-items: center;
-            padding-top: var(--nav-height);
-            overflow: hidden;
+            overflow: hidden; padding: 5rem 0 4rem;
         }
         #hero::before {
-            content: '';
-            position: absolute; top: 15%; right: 8%;
+            content: ''; position: absolute; top: 15%; right: 8%;
             width: 500px; height: 500px;
             background: radial-gradient(circle, var(--accent-glow) 0%, transparent 68%);
             pointer-events: none; z-index: 0;
         }
         #hero::after {
-            content: '';
-            position: absolute; bottom: 15%; left: 4%;
+            content: ''; position: absolute; bottom: 15%; left: 4%;
             width: 300px; height: 300px;
             background: radial-gradient(circle, var(--accent2-glow) 0%, transparent 68%);
             pointer-events: none; z-index: 0;
         }
-
         .hero-inner {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-            width: 100%;
-            position: relative; z-index: 1;
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 4rem; align-items: center; width: 100%; position: relative; z-index: 1;
         }
-
         .hero-tag {
             display: inline-flex; align-items: center; gap: 0.5rem;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 100px;
-            padding: 0.4rem 1rem;
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            font-family: 'Fira Code', monospace;
-            margin-bottom: 1.5rem;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 100px; padding: 0.4rem 1rem;
+            font-size: 0.78rem; color: var(--text-muted);
+            font-family: 'Fira Code', monospace; margin-bottom: 1.5rem;
         }
         .dot {
             width: 8px; height: 8px; border-radius: 50%;
             background: #2ecc71; box-shadow: 0 0 8px #2ecc71;
-            animation: pulse 2s ease infinite;
+            animation: pulse-dot 2s ease infinite;
         }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
 
         .hero-name {
             font-size: clamp(2.6rem, 5vw, 4rem);
@@ -372,39 +474,47 @@
             letter-spacing: -0.035em; margin-bottom: 0.75rem;
         }
         .hero-name .highlight { color: var(--accent); }
-
         .hero-role {
             font-family: 'Fira Code', monospace;
             font-size: clamp(0.95rem, 1.8vw, 1.15rem);
-            color: var(--text-muted);
-            margin-bottom: 1.75rem; min-height: 1.8em;
+            color: var(--text-muted); margin-bottom: 1.75rem; min-height: 1.8em;
         }
-        .cursor { color: var(--accent); animation: blink 1s step-end infinite; }
+        .cursor-blink { color: var(--accent); animation: blink 1s step-end infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
         .hero-bio {
             font-size: 1.05rem; color: var(--text-muted);
-            max-width: 480px; margin-bottom: 2.5rem; line-height: 1.85;
+            max-width: 480px; margin-bottom: 2rem; line-height: 1.85;
         }
         .hero-bio strong { color: var(--text); font-weight: 600; }
         .accent-text { color: var(--accent); font-weight: 600; }
+        .hero-cta { display: flex; gap: 0.875rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
 
-        .hero-cta { display: flex; gap: 0.875rem; flex-wrap: wrap; }
+        /* 5. GitHub stats */
+        .hero-stats {
+            display: flex; gap: 1.5rem; flex-wrap: wrap;
+        }
+        .stat-chip {
+            display: flex; align-items: center; gap: 0.5rem;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 100px; padding: 0.35rem 0.9rem;
+            font-family: 'Fira Code', monospace; font-size: 0.78rem;
+            color: var(--text-muted); backdrop-filter: blur(12px);
+            transition: all 0.25s ease;
+        }
+        .stat-chip:hover { border-color: var(--accent); color: var(--text); }
+        .stat-chip strong { color: var(--accent); font-weight: 600; }
 
         /* photo */
         .hero-photo-wrap { display: flex; justify-content: center; align-items: center; }
         .photo-frame { position: relative; width: 380px; height: 380px; }
         .photo-frame::before {
-            content: '';
-            position: absolute; inset: -4px;
+            content: ''; position: absolute; inset: -4px;
             background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent));
             border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-            z-index: 0;
-            animation: morph 9s ease-in-out infinite;
+            z-index: 0; animation: morph 9s ease-in-out infinite;
         }
         .photo-frame::after {
-            content: '';
-            position: absolute; inset: -28px;
+            content: ''; position: absolute; inset: -28px;
             background: radial-gradient(circle, var(--accent-glow) 0%, transparent 68%);
             z-index: -1; border-radius: 50%;
         }
@@ -430,48 +540,29 @@
             background: var(--bg2); border: 1px solid var(--border);
             border-radius: 100px; padding: 0.3rem 0.75rem;
             font-size: 0.72rem; font-family: 'Fira Code', monospace;
-            color: var(--text-muted); white-space: nowrap;
-            backdrop-filter: blur(12px);
+            color: var(--text-muted); white-space: nowrap; backdrop-filter: blur(12px);
         }
 
         /* ===========================
            ABOUT
         =========================== */
         #about { padding: 9rem 0; }
-
-        .about-grid {
-            display: grid;
-            grid-template-columns: 1.15fr 1fr;
-            gap: 4.5rem; align-items: start;
-        }
-        .about-text p {
-            color: var(--text-muted); font-size: 1.04rem;
-            line-height: 1.9; margin-bottom: 1.4rem;
-        }
+        .about-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 4.5rem; align-items: start; }
+        .about-text p { color: var(--text-muted); font-size: 1.04rem; line-height: 1.9; margin-bottom: 1.4rem; }
         .about-text p strong { color: var(--text); font-weight: 600; }
-
         .timeline { display: flex; flex-direction: column; gap: 1.25rem; }
         .timeline-item {
             background: var(--card); border: 1px solid var(--border);
             border-radius: var(--radius); padding: 1.2rem 1.5rem;
             backdrop-filter: blur(12px);
-            transition: all 0.3s var(--ease);
-            position: relative; overflow: hidden;
+            transition: all 0.3s var(--ease); position: relative; overflow: hidden;
         }
         .timeline-item::before {
-            content: '';
-            position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
             background: linear-gradient(to bottom, var(--accent), var(--accent2));
         }
-        .timeline-item:hover {
-            border-color: var(--border-hover);
-            box-shadow: 0 8px 28px var(--accent-glow);
-            transform: translateX(5px);
-        }
-        .timeline-year {
-            font-family: 'Fira Code', monospace; font-size: 0.72rem;
-            color: var(--accent); font-weight: 500; margin-bottom: 0.2rem;
-        }
+        .timeline-item:hover { border-color: var(--border-hover); box-shadow: 0 8px 28px var(--accent-glow); transform: translateX(5px); }
+        .timeline-year { font-family: 'Fira Code', monospace; font-size: 0.72rem; color: var(--accent); font-weight: 500; margin-bottom: 0.2rem; }
         .timeline-title { font-weight: 700; font-size: 0.93rem; margin-bottom: 0.2rem; }
         .timeline-desc  { font-size: 0.82rem; color: var(--text-muted); }
 
@@ -479,24 +570,14 @@
            STACK
         =========================== */
         #stack { padding: 9rem 0; background: var(--bg2); transition: background 0.45s ease; }
-
-        .stack-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
-            gap: 1rem; margin-top: 2.5rem;
-        }
+        .stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 1rem; margin-top: 2.5rem; }
         .stack-item {
             background: var(--card); border: 1px solid var(--border);
             border-radius: var(--radius); padding: 1.25rem 0.75rem;
-            text-align: center; cursor: default;
-            backdrop-filter: blur(12px);
+            text-align: center; cursor: none; backdrop-filter: blur(12px);
             transition: all 0.3s var(--ease);
         }
-        .stack-item:hover {
-            border-color: var(--border-hover);
-            box-shadow: 0 8px 28px var(--accent-glow);
-            transform: translateY(-5px);
-        }
+        .stack-item:hover { border-color: var(--border-hover); box-shadow: 0 8px 28px var(--accent-glow); transform: translateY(-5px); }
         .stack-icon { font-size: 1.9rem; margin-bottom: 0.5rem; display: block; }
         .stack-name { font-size: 0.76rem; font-weight: 600; color: var(--text-muted); }
 
@@ -504,25 +585,15 @@
            PROJECTS
         =========================== */
         #projects { padding: 9rem 0; }
-
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem; margin-top: 2.5rem;
-        }
+        .projects-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-top: 2.5rem; }
         .project-card {
             background: var(--card); border: 1px solid var(--border);
             border-radius: var(--radius); padding: 2rem;
-            transition: all 0.35s var(--ease);
-            backdrop-filter: blur(12px);
+            transition: all 0.35s var(--ease); backdrop-filter: blur(12px);
             display: flex; flex-direction: column; gap: 0.875rem;
-            text-decoration: none; color: inherit;
+            text-decoration: none; color: inherit; cursor: none;
         }
-        .project-card:hover {
-            border-color: var(--border-hover);
-            box-shadow: 0 18px 52px var(--accent-glow);
-            transform: translateY(-7px);
-        }
+        .project-card:hover { border-color: var(--border-hover); box-shadow: 0 18px 52px var(--accent-glow); transform: translateY(-7px); }
         .project-header { display: flex; align-items: flex-start; justify-content: space-between; }
         .project-icon { font-size: 2rem; }
         .project-arrow { color: var(--text-muted); transition: color 0.25s ease; }
@@ -531,61 +602,40 @@
         .project-desc { font-size: 0.88rem; color: var(--text-muted); line-height: 1.75; flex: 1; }
         .project-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .tag {
-            background: rgba(233,30,140,0.09);
-            border: 1px solid rgba(233,30,140,0.2);
-            color: var(--accent);
-            font-size: 0.7rem; font-family: 'Fira Code', monospace;
+            background: rgba(233,30,140,0.09); border: 1px solid rgba(233,30,140,0.2);
+            color: var(--accent); font-size: 0.7rem; font-family: 'Fira Code', monospace;
             padding: 0.2rem 0.55rem; border-radius: 4px; font-weight: 500;
         }
-
-        /* featured card */
-        .project-card.featured {
-            grid-column: 1 / -1;
-            flex-direction: row; gap: 2.5rem; align-items: flex-start;
-        }
-        .project-card.featured .project-meta {
-            display: flex; flex-direction: column; gap: 0.875rem; flex: 1;
-        }
+        .project-card.featured { grid-column: 1 / -1; flex-direction: row; gap: 2.5rem; align-items: flex-start; }
+        .project-card.featured .project-meta { display: flex; flex-direction: column; gap: 0.875rem; flex: 1; }
         .project-card.featured .project-icon { font-size: 2.5rem; flex-shrink: 0; }
         .featured-pill {
             display: inline-flex; align-items: center; gap: 0.35rem;
-            background: rgba(245,230,66,0.09);
-            border: 1px solid rgba(245,230,66,0.28);
-            color: var(--accent2);
-            font-size: 0.7rem; font-family: 'Fira Code', monospace;
+            background: rgba(245,230,66,0.09); border: 1px solid rgba(245,230,66,0.28);
+            color: var(--accent2); font-size: 0.7rem; font-family: 'Fira Code', monospace;
             padding: 0.22rem 0.6rem; border-radius: 4px; width: fit-content;
         }
 
         /* ===========================
            CONTACT
         =========================== */
-        #contact {
-            padding: 9rem 0; background: var(--bg2);
-            text-align: center;
-            transition: background 0.45s ease;
-        }
+        #contact { padding: 9rem 0; background: var(--bg2); text-align: center; transition: background 0.45s ease; }
         .contact-inner { max-width: 580px; margin: 0 auto; }
-        .contact-subtitle {
-            color: var(--text-muted); font-size: 1.05rem;
-            line-height: 1.85; margin-bottom: 2.75rem;
-        }
-        .contact-links {
-            display: flex; justify-content: center;
-            gap: 1rem; flex-wrap: wrap; margin-bottom: 2.25rem;
-        }
+        .contact-subtitle { color: var(--text-muted); font-size: 1.05rem; line-height: 1.85; margin-bottom: 2.75rem; }
+        .contact-links { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2.25rem; }
         .contact-link {
             display: inline-flex; align-items: center; gap: 0.55rem;
             background: var(--card); border: 1px solid var(--border);
             color: var(--text); padding: 0.7rem 1.5rem;
             border-radius: var(--radius-sm); font-weight: 500; font-size: 0.9rem;
             text-decoration: none; transition: all 0.3s var(--ease);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px); cursor: none;
         }
-        .contact-link:hover {
-            border-color: var(--accent); color: var(--accent);
-            box-shadow: 0 8px 24px var(--accent-glow);
-            transform: translateY(-3px);
-        }
+        .contact-link:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 8px 24px var(--accent-glow); transform: translateY(-3px); }
+
+        /* 7. Copy email button */
+        .copy-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); }
+        .copy-btn.copied { border-color: #2ecc71; color: #2ecc71; }
 
         /* ===========================
            FOOTER
@@ -601,80 +651,41 @@
         /* ===========================
            THEME SWITCHER
         =========================== */
-        .theme-switcher {
-            position: fixed;
-            bottom: 2rem; right: 2rem;
-            z-index: 9000;
-        }
-
+        .theme-switcher { position: fixed; bottom: 2rem; right: 2rem; z-index: 9000; }
         .ts-btn {
-            width: 52px; height: 52px;
-            border-radius: 50%;
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            font-size: 1.15rem;
-            cursor: pointer;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: var(--bg2); border: 1px solid var(--border);
+            color: var(--text-muted); font-size: 1.15rem; cursor: none;
             backdrop-filter: blur(16px);
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 24px rgba(0,0,0,0.35);
             transition: all 0.3s var(--ease);
         }
-        .ts-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-            box-shadow: 0 0 22px var(--accent-glow);
-            transform: scale(1.1) rotate(20deg);
-        }
-
+        .ts-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 22px var(--accent-glow); transform: scale(1.1) rotate(20deg); }
         .ts-panel {
-            position: absolute;
-            bottom: 66px; right: 0;
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1.25rem;
-            width: 210px;
+            position: absolute; bottom: 66px; right: 0;
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 1.25rem; width: 210px;
             backdrop-filter: blur(24px);
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            opacity: 0;
-            transform: translateY(12px) scale(0.93);
-            pointer-events: none;
-            transition: all 0.25s var(--ease);
+            opacity: 0; transform: translateY(12px) scale(0.93);
+            pointer-events: none; transition: all 0.25s var(--ease);
             transform-origin: bottom right;
         }
-        .ts-panel.open {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            pointer-events: all;
-        }
-
-        .ts-heading {
-            font-size: 0.68rem; font-family: 'Fira Code', monospace;
-            color: var(--text-muted); letter-spacing: 0.12em;
-            text-transform: uppercase; margin-bottom: 1rem;
-        }
-
+        .ts-panel.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+        .ts-heading { font-size: 0.68rem; font-family: 'Fira Code', monospace; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 1rem; }
         .ts-options { display: flex; flex-direction: column; gap: 0.4rem; }
-
         .ts-opt {
             display: flex; align-items: center; gap: 0.75rem;
             background: none; border: 1px solid transparent;
-            border-radius: var(--radius-sm);
-            padding: 0.55rem 0.75rem;
-            cursor: pointer; color: var(--text-muted);
-            font-size: 0.85rem; font-family: 'Inter', sans-serif;
-            transition: all 0.2s ease;
+            border-radius: var(--radius-sm); padding: 0.55rem 0.75rem;
+            cursor: none; color: var(--text-muted); font-size: 0.85rem;
+            font-family: 'Inter', sans-serif; transition: all 0.2s ease;
             width: 100%; text-align: left;
         }
         .ts-opt:hover { background: var(--card); border-color: var(--border); color: var(--text); }
         .ts-opt.active { background: var(--card); border-color: var(--accent); color: var(--text); }
-
-        .ts-swatch {
-            width: 22px; height: 22px;
-            border-radius: 50%; flex-shrink: 0;
-            border: 2px solid rgba(255,255,255,0.1);
-        }
+        .ts-swatch { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.1); }
         .sw-dark      { background: linear-gradient(135deg, #0d0d14 50%, #e91e8c); }
         .sw-light     { background: linear-gradient(135deg, #f4f4f8 50%, #e91e8c); }
         .sw-matrix    { background: linear-gradient(135deg, #000000 50%, #00ff41); }
@@ -682,12 +693,27 @@
         .sw-minimal   { background: linear-gradient(135deg, #080808 50%, #ffffff); }
 
         /* ===========================
+           9. BACK TO TOP
+        =========================== */
+        #back-top {
+            position: fixed; bottom: 2rem; left: 2rem;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: var(--bg2); border: 1px solid var(--border);
+            color: var(--text-muted); font-size: 1rem; cursor: none;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+            opacity: 0; visibility: hidden;
+            transition: all 0.3s var(--ease);
+            z-index: 9000;
+        }
+        #back-top.visible { opacity: 1; visibility: visible; }
+        #back-top:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 22px var(--accent-glow); transform: translateY(-3px); }
+
+        /* ===========================
            SCROLL FADE-IN
         =========================== */
-        .fade-in {
-            opacity: 0; transform: translateY(28px);
-            transition: opacity 0.65s ease, transform 0.65s ease;
-        }
+        .fade-in { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
         .fade-in.visible { opacity: 1; transform: translateY(0); }
         .fade-in[data-delay="1"] { transition-delay: 0.1s; }
         .fade-in[data-delay="2"] { transition-delay: 0.2s; }
@@ -706,11 +732,11 @@
             .hero-photo-wrap { order: -1; }
             .photo-frame { width: 260px; height: 260px; }
             .hero-bio { margin: 0 auto 2rem; }
+            .hero-tag, .hero-stats { justify-content: center; }
             .hero-tag { margin: 0 auto 1.25rem; }
             .hero-cta { justify-content: center; }
             .projects-grid { grid-template-columns: 1fr; }
             .project-card.featured { grid-column: 1; }
-            .nav-links { display: none; }
             .stack-grid { grid-template-columns: repeat(3, 1fr); }
         }
 
@@ -718,7 +744,22 @@
 </head>
 <body>
 
-<!-- Matrix Rain Canvas -->
+<!-- ========================
+     1. LOADING SCREEN
+======================== -->
+<div id="loader">
+    <div class="loader-logo">dk<span>.</span></div>
+    <div class="loader-bar"><div class="loader-fill"></div></div>
+</div>
+
+<!-- 2. CUSTOM CURSOR -->
+<div class="cursor-dot"  id="cursor-dot"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- 3. SCROLL PROGRESS BAR -->
+<div id="scroll-progress"></div>
+
+<!-- MATRIX CANVAS -->
 <canvas id="matrix-canvas"></canvas>
 
 <!-- ========================
@@ -728,15 +769,52 @@
     <div class="nav-inner">
         <a href="#" class="nav-logo">dk<span>.</span>dev</a>
         <div class="nav-right">
-            <ul class="nav-links">
+            <ul class="nav-links" id="nav-links">
                 <li><a href="#about">About</a></li>
                 <li><a href="#stack">Stack</a></li>
                 <li><a href="#projects">Projects</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
+            <!-- 4. Hamburger -->
+            <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
         </div>
     </div>
 </nav>
+
+<!-- 4. MOBILE MENU -->
+<div class="mobile-menu" id="mobile-menu">
+    <button class="mobile-menu-close" onclick="toggleMobileMenu()"><i class="fas fa-times"></i></button>
+    <a href="#about"    onclick="toggleMobileMenu()">About</a>
+    <a href="#stack"    onclick="toggleMobileMenu()">Stack</a>
+    <a href="#projects" onclick="toggleMobileMenu()">Projects</a>
+    <a href="#contact"  onclick="toggleMobileMenu()">Contact</a>
+</div>
+<div class="mobile-overlay" id="mobile-overlay" onclick="toggleMobileMenu()"></div>
+
+<!-- ========================
+     6. TICKER
+======================== -->
+<div class="ticker-wrap">
+    <div class="ticker-track">
+        <span class="ticker-item"><span>⚡</span> Currently building: Hendoshi Store</span>
+        <span class="ticker-item"><span>📚</span> Learning: Django REST Framework</span>
+        <span class="ticker-item"><span>🎯</span> Open to: Full-Stack opportunities</span>
+        <span class="ticker-item"><span>📍</span> Based in: Co. Wexford, Ireland</span>
+        <span class="ticker-item"><span>🇧🇷</span> Originally from: Brazil</span>
+        <span class="ticker-item"><span>🎓</span> Studying at: Code Institute</span>
+        <span class="ticker-item"><span>🛍️</span> Launching: Hendoshi Store e-commerce</span>
+        <!-- duplicate for seamless loop -->
+        <span class="ticker-item"><span>⚡</span> Currently building: Hendoshi Store</span>
+        <span class="ticker-item"><span>📚</span> Learning: Django REST Framework</span>
+        <span class="ticker-item"><span>🎯</span> Open to: Full-Stack opportunities</span>
+        <span class="ticker-item"><span>📍</span> Based in: Co. Wexford, Ireland</span>
+        <span class="ticker-item"><span>🇧🇷</span> Originally from: Brazil</span>
+        <span class="ticker-item"><span>🎓</span> Studying at: Code Institute</span>
+        <span class="ticker-item"><span>🛍️</span> Launching: Hendoshi Store e-commerce</span>
+    </div>
+</div>
 
 <!-- ========================
      HERO
@@ -753,7 +831,7 @@
                     Danni<br><span class="highlight">Kadoshi</span>
                 </h1>
                 <p class="hero-role">
-                    <span id="typed-text"></span><span class="cursor">|</span>
+                    <span id="typed-text"></span><span class="cursor-blink">|</span>
                 </p>
                 <p class="hero-bio">
                     From <strong>QA Specialist & Tech Manager</strong> to full-stack developer.
@@ -763,6 +841,12 @@
                 <div class="hero-cta">
                     <a href="#projects" class="btn-primary"><i class="fas fa-code"></i> See My Work</a>
                     <a href="mailto:dannykadoshi@icloud.com" class="btn-outline"><i class="fas fa-envelope"></i> Get In Touch</a>
+                </div>
+                <!-- 5. Live GitHub Stats -->
+                <div class="hero-stats">
+                    <div class="stat-chip"><strong id="stat-repos">—</strong> Repos</div>
+                    <div class="stat-chip"><strong id="stat-followers">—</strong> Followers</div>
+                    <div class="stat-chip"><strong>2023</strong> Coding since</div>
                 </div>
             </div>
             <div class="hero-photo-wrap">
@@ -787,24 +871,10 @@
         <h2 class="section-title fade-in">The Story Behind the Code</h2>
         <div class="about-grid">
             <div class="about-text">
-                <p class="fade-in" data-delay="1">
-                    I'm a <strong>Quality Assurance Specialist</strong> and <strong>Tech Support Manager</strong>
-                    who decided that understanding software wasn't enough — I wanted to build it.
-                </p>
-                <p class="fade-in" data-delay="2">
-                    My background in QA means I approach development with a
-                    <span class="accent-text">precision-first mindset</span>.
-                    I test before I ship, think about edge cases, and care deeply about the user experience at every level.
-                </p>
-                <p class="fade-in" data-delay="3">
-                    Currently levelling up through <strong>Code Institute's Full-Stack programme</strong>,
-                    while simultaneously building <span class="accent-text">Hendoshi Store</span> — a real
-                    fashion e-commerce business I'm taking from portfolio project to live product.
-                </p>
-                <p class="fade-in" data-delay="4">
-                    I moved from <strong>Brazil to Ireland in 2013</strong>. That kind of leap takes
-                    ambition and adaptability — the same qualities I bring to every line of code I write.
-                </p>
+                <p class="fade-in" data-delay="1">I'm a <strong>Quality Assurance Specialist</strong> and <strong>Tech Support Manager</strong> who decided that understanding software wasn't enough — I wanted to build it.</p>
+                <p class="fade-in" data-delay="2">My background in QA means I approach development with a <span class="accent-text">precision-first mindset</span>. I test before I ship, think about edge cases, and care deeply about the user experience at every level.</p>
+                <p class="fade-in" data-delay="3">Currently levelling up through <strong>Code Institute's Full-Stack programme</strong>, while simultaneously building <span class="accent-text">Hendoshi Store</span> — a real fashion e-commerce business I'm taking from portfolio project to live product.</p>
+                <p class="fade-in" data-delay="4">I moved from <strong>Brazil to Ireland in 2013</strong>. That kind of leap takes ambition and adaptability — the same qualities I bring to every line of code I write.</p>
             </div>
             <div class="timeline">
                 <div class="timeline-item fade-in" data-delay="1">
@@ -872,66 +942,41 @@
                         <div class="featured-pill">⭐ Flagship Project</div>
                         <h3 class="project-name" style="margin-top:0.5rem">Hendoshi Store</h3>
                     </div>
-                    <p class="project-desc">
-                        A production-grade fashion e-commerce platform — an actual business, not just a portfolio piece.
-                        Metal-inspired apparel with original skull, animal, and gym designs. Built with Stripe payments,
-                        community gallery, custom wishlist, design stories, and AI integration.
-                    </p>
+                    <p class="project-desc">A production-grade fashion e-commerce platform — an actual business, not just a portfolio piece. Metal-inspired apparel with original skull, animal, and gym designs. Stripe payments, community gallery, custom wishlist, design stories, and AI integration.</p>
                     <div class="project-tags">
-                        <span class="tag">Django</span><span class="tag">PostgreSQL</span>
-                        <span class="tag">Stripe</span><span class="tag">Cloudinary</span>
-                        <span class="tag">Bootstrap 5</span><span class="tag">Gemini AI</span>
-                        <span class="tag">Render</span>
+                        <span class="tag">Django</span><span class="tag">PostgreSQL</span><span class="tag">Stripe</span>
+                        <span class="tag">Cloudinary</span><span class="tag">Bootstrap 5</span><span class="tag">Gemini AI</span><span class="tag">Render</span>
                     </div>
                 </div>
                 <i class="fas fa-arrow-up-right-from-square project-arrow" style="margin-top:0.25rem"></i>
             </a>
 
             <a href="https://github.com/dannykadoshi/fit-track-aura" target="_blank" rel="noopener" class="project-card fade-in" data-delay="1">
-                <div class="project-header">
-                    <span class="project-icon">💪</span>
-                    <i class="fas fa-arrow-up-right-from-square project-arrow"></i>
-                </div>
+                <div class="project-header"><span class="project-icon">💪</span><i class="fas fa-arrow-up-right-from-square project-arrow"></i></div>
                 <h3 class="project-name">Fit Track Aura</h3>
                 <p class="project-desc">Full-stack fitness tracker with workout logging, goal setting, and streak tracking. Strong focus on UX and motivational design.</p>
-                <div class="project-tags">
-                    <span class="tag">Django</span><span class="tag">PostgreSQL</span>
-                    <span class="tag">Bootstrap 5</span><span class="tag">Python</span>
-                </div>
+                <div class="project-tags"><span class="tag">Django</span><span class="tag">PostgreSQL</span><span class="tag">Bootstrap 5</span><span class="tag">Python</span></div>
             </a>
 
             <a href="https://github.com/dannykadoshi/FemmeFlow-Tracker" target="_blank" rel="noopener" class="project-card fade-in" data-delay="2">
-                <div class="project-header">
-                    <span class="project-icon">🌸</span>
-                    <i class="fas fa-arrow-up-right-from-square project-arrow"></i>
-                </div>
+                <div class="project-header"><span class="project-icon">🌸</span><i class="fas fa-arrow-up-right-from-square project-arrow"></i></div>
                 <h3 class="project-name">FemmeFlow Tracker</h3>
                 <p class="project-desc">A sensitive, user-centred health tracking app built with Python — designed with privacy and usability as top priorities.</p>
                 <div class="project-tags"><span class="tag">Python</span></div>
             </a>
 
             <a href="https://github.com/dannykadoshi/UnleashDiscipline" target="_blank" rel="noopener" class="project-card fade-in" data-delay="3">
-                <div class="project-header">
-                    <span class="project-icon">💬</span>
-                    <i class="fas fa-arrow-up-right-from-square project-arrow"></i>
-                </div>
+                <div class="project-header"><span class="project-icon">💬</span><i class="fas fa-arrow-up-right-from-square project-arrow"></i></div>
                 <h3 class="project-name">Unleash Discipline</h3>
                 <p class="project-desc">JavaScript-powered motivational quotes app built to inspire focus, consistency, and personal growth through a healthy lifestyle lens.</p>
-                <div class="project-tags">
-                    <span class="tag">JavaScript</span><span class="tag">HTML</span><span class="tag">CSS</span>
-                </div>
+                <div class="project-tags"><span class="tag">JavaScript</span><span class="tag">HTML</span><span class="tag">CSS</span></div>
             </a>
 
             <a href="https://github.com/dannykadoshi/hersee-massage" target="_blank" rel="noopener" class="project-card fade-in" data-delay="4">
-                <div class="project-header">
-                    <span class="project-icon">💆</span>
-                    <i class="fas fa-arrow-up-right-from-square project-arrow"></i>
-                </div>
+                <div class="project-header"><span class="project-icon">💆</span><i class="fas fa-arrow-up-right-from-square project-arrow"></i></div>
                 <h3 class="project-name">Hersee Massage</h3>
                 <p class="project-desc">A clean, responsive website for a massage therapy business — focused on calm UX, clear service presentation, and a welcoming user experience.</p>
-                <div class="project-tags">
-                    <span class="tag">HTML</span><span class="tag">CSS</span>
-                </div>
+                <div class="project-tags"><span class="tag">HTML</span><span class="tag">CSS</span></div>
             </a>
 
         </div>
@@ -946,14 +991,15 @@
         <div class="contact-inner">
             <p class="section-label fade-in">// let's connect</p>
             <h2 class="section-title fade-in">Get In Touch</h2>
-            <p class="contact-subtitle fade-in">
-                Whether you want to talk code, collaboration, or just say hello —
-                my inbox is always open.
-            </p>
+            <p class="contact-subtitle fade-in">Whether you want to talk code, collaboration, or just say hello — my inbox is always open.</p>
             <div class="contact-links fade-in">
                 <a href="mailto:dannykadoshi@icloud.com" class="contact-link">
                     <i class="fas fa-envelope"></i> Email Me
                 </a>
+                <!-- 7. Copy email -->
+                <button id="copy-btn" class="contact-link copy-btn" onclick="copyEmail()">
+                    <i class="fas fa-copy"></i> Copy Email
+                </button>
                 <a href="https://github.com/dannykadoshi" target="_blank" rel="noopener" class="contact-link">
                     <i class="fab fa-github"></i> GitHub
                 </a>
@@ -965,16 +1011,12 @@
     </div>
 </section>
 
-<!-- ========================
-     FOOTER
-======================== -->
+<!-- FOOTER -->
 <footer>
     <p>Designed & built by <span>Danni Kadoshi</span> &nbsp;·&nbsp; Co. Wexford, Ireland 🇮🇪</p>
 </footer>
 
-<!-- ========================
-     THEME SWITCHER
-======================== -->
+<!-- THEME SWITCHER -->
 <div class="theme-switcher">
     <div class="ts-panel" id="ts-panel">
         <p class="ts-heading">// choose theme</p>
@@ -991,39 +1033,39 @@
     </button>
 </div>
 
+<!-- 9. BACK TO TOP -->
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
 <!-- ========================
      JAVASCRIPT
 ======================== -->
 <script>
-    // ── MATRIX RAIN (must be defined before setTheme is called) ──
+    // ── MATRIX RAIN ────────────────────────────────────────
     const canvas   = document.getElementById('matrix-canvas');
     const ctx      = canvas.getContext('2d');
-    let   animId   = null;
-    let   drops    = [];
+    let   animId   = null, drops = [];
     const FONT_SIZE = 14;
     const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ'.split('');
 
     function initMatrix() {
         canvas.width  = window.innerWidth;
         canvas.height = window.innerHeight;
-        const cols = Math.floor(canvas.width / FONT_SIZE);
-        drops = Array.from({length: cols}, () => Math.random() * -50);
+        drops = Array.from({length: Math.floor(canvas.width / FONT_SIZE)}, () => Math.random() * -50);
     }
-
     function drawMatrix() {
         ctx.fillStyle = 'rgba(0,0,0,0.04)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.font = FONT_SIZE + 'px monospace';
         drops.forEach((y, i) => {
             const char = CHARS[Math.floor(Math.random() * CHARS.length)];
-            const x    = i * FONT_SIZE;
             ctx.fillStyle = (y > 1 && y < 3) ? '#ccffcc' : '#00ff41';
-            ctx.fillText(char, x, y * FONT_SIZE);
+            ctx.fillText(char, i * FONT_SIZE, y * FONT_SIZE);
             if (y * FONT_SIZE > canvas.height && Math.random() > 0.97) drops[i] = 0;
             drops[i] += 1;
         });
     }
-
     function startMatrix() {
         initMatrix();
         if (animId) cancelAnimationFrame(animId);
@@ -1031,7 +1073,6 @@
         loop();
         window.addEventListener('resize', initMatrix);
     }
-
     function stopMatrix() {
         if (animId) { cancelAnimationFrame(animId); animId = null; }
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1045,48 +1086,125 @@
     function setTheme(t) {
         root.setAttribute('data-theme', t);
         localStorage.setItem('theme', t);
-        document.querySelectorAll('.ts-opt').forEach(o =>
-            o.classList.toggle('active', o.dataset.t === t)
-        );
+        document.querySelectorAll('.ts-opt').forEach(o => o.classList.toggle('active', o.dataset.t === t));
         t === 'matrix' ? startMatrix() : stopMatrix();
         panel.classList.remove('open');
     }
+    function togglePanel() { panel.classList.toggle('open'); }
+    document.addEventListener('click', e => { if (!e.target.closest('.theme-switcher')) panel.classList.remove('open'); });
 
-    function togglePanel() {
-        panel.classList.toggle('open');
-    }
-
-    // close panel on outside click
-    document.addEventListener('click', e => {
-        if (!e.target.closest('.theme-switcher')) panel.classList.remove('open');
-    });
-
-    // restore saved theme — canvas/ctx defined below via hoisted functions
     const saved = localStorage.getItem('theme') || 'dark';
     setTheme(saved);
+
+    // ── 1. LOADING SCREEN ──────────────────────────────────
+    window.addEventListener('load', () => {
+        setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1500);
+    });
+
+    // ── 2. CUSTOM CURSOR ───────────────────────────────────
+    const cursorDot  = document.getElementById('cursor-dot');
+    const cursorRing = document.getElementById('cursor-ring');
+    let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+
+    document.addEventListener('mousemove', e => {
+        mouseX = e.clientX; mouseY = e.clientY;
+        cursorDot.style.transform = `translate(${mouseX - 4}px, ${mouseY - 4}px)`;
+    });
+    function animateRing() {
+        ringX += (mouseX - ringX) * 0.13;
+        ringY += (mouseY - ringY) * 0.13;
+        cursorRing.style.transform = `translate(${ringX - 17}px, ${ringY - 17}px)`;
+        requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    document.querySelectorAll('a, button, .stack-item, .project-card, .timeline-item').forEach(el => {
+        el.addEventListener('mouseenter', () => cursorRing.classList.add('hovering'));
+        el.addEventListener('mouseleave', () => cursorRing.classList.remove('hovering'));
+    });
+    document.addEventListener('mouseleave', () => { cursorDot.style.opacity = '0'; cursorRing.style.opacity = '0'; });
+    document.addEventListener('mouseenter', () => { cursorDot.style.opacity = '1'; cursorRing.style.opacity = '0.6'; });
+
+    // ── 3. SCROLL PROGRESS + 9. BACK TO TOP ────────────────
+    const progressBar = document.getElementById('scroll-progress');
+    const backTop     = document.getElementById('back-top');
+
+    window.addEventListener('scroll', () => {
+        const pct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+        progressBar.style.width = pct + '%';
+        backTop.classList.toggle('visible', window.scrollY > 400);
+    });
+
+    // ── 3. ACTIVE NAV ──────────────────────────────────────
+    const navLinks = document.querySelectorAll('.nav-links a');
+    const sectionObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                navLinks.forEach(a => a.classList.remove('active'));
+                const link = document.querySelector(`.nav-links a[href="#${entry.target.id}"]`);
+                if (link) link.classList.add('active');
+            }
+        });
+    }, { threshold: 0.4 });
+    document.querySelectorAll('section[id]').forEach(s => sectionObserver.observe(s));
+
+    // ── 4. MOBILE MENU ─────────────────────────────────────
+    function toggleMobileMenu() {
+        const menu    = document.getElementById('mobile-menu');
+        const overlay = document.getElementById('mobile-overlay');
+        const burger  = document.getElementById('hamburger');
+        const open    = menu.classList.toggle('open');
+        overlay.classList.toggle('open', open);
+        burger.classList.toggle('open', open);
+        document.body.style.overflow = open ? 'hidden' : '';
+    }
+
+    // ── 5. GITHUB STATS ────────────────────────────────────
+    fetch('https://api.github.com/users/dannykadoshi')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('stat-repos').textContent     = data.public_repos;
+            document.getElementById('stat-followers').textContent = data.followers;
+        })
+        .catch(() => {
+            document.getElementById('stat-repos').textContent     = '6';
+            document.getElementById('stat-followers').textContent = '4';
+        });
+
+    // ── 7. COPY EMAIL ──────────────────────────────────────
+    function copyEmail() {
+        navigator.clipboard.writeText('dannykadoshi@icloud.com').then(() => {
+            const btn = document.getElementById('copy-btn');
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-copy"></i> Copy Email';
+                btn.classList.remove('copied');
+            }, 2200);
+        });
+    }
 
     // ── TYPING ANIMATION ───────────────────────────────────
     const roles = ['Full-Stack Developer', 'Django Engineer', 'QA-Driven Builder', 'Shipping Real Products'];
     let rIdx = 0, cIdx = 0, deleting = false;
     const typedEl = document.getElementById('typed-text');
-
     function type() {
         const cur = roles[rIdx];
         typedEl.textContent = deleting ? cur.substring(0, cIdx - 1) : cur.substring(0, cIdx + 1);
         cIdx += deleting ? -1 : 1;
         let speed = deleting ? 45 : 75;
-        if (!deleting && cIdx === cur.length)       { speed = 2200; deleting = true; }
-        else if (deleting && cIdx === 0)            { deleting = false; rIdx = (rIdx + 1) % roles.length; speed = 350; }
+        if (!deleting && cIdx === cur.length)  { speed = 2200; deleting = true; }
+        else if (deleting && cIdx === 0)       { deleting = false; rIdx = (rIdx + 1) % roles.length; speed = 350; }
         setTimeout(type, speed);
     }
     type();
 
     // ── SCROLL FADE-IN ─────────────────────────────────────
-    const observer = new IntersectionObserver(
+    const fadeObserver = new IntersectionObserver(
         entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
         { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
     );
-    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    document.querySelectorAll('.fade-in').forEach(el => fadeObserver.observe(el));
 </script>
 
 </body>

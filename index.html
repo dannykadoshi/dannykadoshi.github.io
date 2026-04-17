@@ -995,6 +995,49 @@
      JAVASCRIPT
 ======================== -->
 <script>
+    // ── MATRIX RAIN (must be defined before setTheme is called) ──
+    const canvas   = document.getElementById('matrix-canvas');
+    const ctx      = canvas.getContext('2d');
+    let   animId   = null;
+    let   drops    = [];
+    const FONT_SIZE = 14;
+    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ'.split('');
+
+    function initMatrix() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const cols = Math.floor(canvas.width / FONT_SIZE);
+        drops = Array.from({length: cols}, () => Math.random() * -50);
+    }
+
+    function drawMatrix() {
+        ctx.fillStyle = 'rgba(0,0,0,0.04)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = FONT_SIZE + 'px monospace';
+        drops.forEach((y, i) => {
+            const char = CHARS[Math.floor(Math.random() * CHARS.length)];
+            const x    = i * FONT_SIZE;
+            ctx.fillStyle = (y > 1 && y < 3) ? '#ccffcc' : '#00ff41';
+            ctx.fillText(char, x, y * FONT_SIZE);
+            if (y * FONT_SIZE > canvas.height && Math.random() > 0.97) drops[i] = 0;
+            drops[i] += 1;
+        });
+    }
+
+    function startMatrix() {
+        initMatrix();
+        if (animId) cancelAnimationFrame(animId);
+        function loop() { drawMatrix(); animId = requestAnimationFrame(loop); }
+        loop();
+        window.addEventListener('resize', initMatrix);
+    }
+
+    function stopMatrix() {
+        if (animId) { cancelAnimationFrame(animId); animId = null; }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        window.removeEventListener('resize', initMatrix);
+    }
+
     // ── THEME ──────────────────────────────────────────────
     const root  = document.documentElement;
     const panel = document.getElementById('ts-panel');
@@ -1018,55 +1061,9 @@
         if (!e.target.closest('.theme-switcher')) panel.classList.remove('open');
     });
 
-    // restore saved theme
+    // restore saved theme — canvas/ctx defined below via hoisted functions
     const saved = localStorage.getItem('theme') || 'dark';
     setTheme(saved);
-
-    // ── MATRIX RAIN ────────────────────────────────────────
-    const canvas = document.getElementById('matrix-canvas');
-    const ctx    = canvas.getContext('2d');
-    let   animId = null;
-    let   drops  = [];
-    const FONT_SIZE = 14;
-    const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ'.split('');
-
-    function initMatrix() {
-        canvas.width  = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const cols = Math.floor(canvas.width / FONT_SIZE);
-        drops = Array.from({length: cols}, () => Math.random() * -100);
-    }
-
-    function drawMatrix() {
-        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = FONT_SIZE + 'px monospace';
-
-        drops.forEach((y, i) => {
-            const char = CHARS[Math.floor(Math.random() * CHARS.length)];
-            const x = i * FONT_SIZE;
-            // bright white leading char, green trail
-            ctx.fillStyle = (y > 0 && y < 2) ? '#ffffff' : '#00ff41';
-            ctx.fillText(char, x, y * FONT_SIZE);
-
-            if (y * FONT_SIZE > canvas.height && Math.random() > 0.975) drops[i] = 0;
-            drops[i] += 0.5;
-        });
-    }
-
-    function startMatrix() {
-        initMatrix();
-        if (animId) cancelAnimationFrame(animId);
-        function loop() { drawMatrix(); animId = requestAnimationFrame(loop); }
-        loop();
-        window.addEventListener('resize', initMatrix);
-    }
-
-    function stopMatrix() {
-        if (animId) { cancelAnimationFrame(animId); animId = null; }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        window.removeEventListener('resize', initMatrix);
-    }
 
     // ── TYPING ANIMATION ───────────────────────────────────
     const roles = ['Full-Stack Developer', 'Django Engineer', 'QA-Driven Builder', 'Shipping Real Products'];
